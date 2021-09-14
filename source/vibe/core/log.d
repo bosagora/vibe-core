@@ -651,9 +651,6 @@ final class SyslogLogger(OutputStream) : Logger {
 		SyslogFacility m_facility;
 	}
 
-	deprecated("Use `SyslogFacility` instead.")
-	alias Facility = SyslogFacility;
-
 	/// Severities
 	private enum Severity {
 		emergency,   /// system is unusable

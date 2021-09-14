@@ -203,11 +203,6 @@ alias InetPath = GenericPath!InetPathFormat;
 version (Windows) alias NativePath = WindowsPath;
 else alias NativePath = PosixPath;
 
-deprecated("Use NativePath or one the specific path types instead.")
-alias Path = NativePath;
-deprecated("Use NativePath.Segment or one the specific path types instead.")
-alias PathEntry = Path.Segment;
-
 /// Provides a common interface to operate on paths of various kinds.
 struct GenericPath(F) {
 @safe:
@@ -269,12 +264,6 @@ struct GenericPath(F) {
 			return ret;
 		}
 
-		deprecated("Use the constructor instead.")
-		static Segment validateFilename(string name)
-		{
-			return Segment(name);
-		}
-
 		/// The (file/directory) name of the path segment.
 		@property string name() const nothrow @nogc { return m_name; }
 		/// The trailing separator (e.g. `'/'`) or `'\0'`.
@@ -287,9 +276,6 @@ struct GenericPath(F) {
 		}
 		/// Returns `true` $(I iff) the segment has a trailing path separator.
 		@property bool hasSeparator() const nothrow @nogc { return m_separator != '\0'; }
-
-		deprecated("Use .name instead.")
-		string toString() const nothrow @nogc { return m_name; }
 
 		/** Converts the segment to another path type.
 
@@ -1380,44 +1366,6 @@ struct WindowsPathFormat {
 		assert(getBackNode("foo\\") == "foo\\");
 	}
 
-	deprecated("Use decodeSingleSegment instead.")
-	static auto decodeSegment(S)(string segment)
-	{
-		static struct R {
-			S[2] items;
-			size_t i = items.length;
-			this(S s) { i = 1; items[i] = s; }
-			this(S a, S b) { i = 0; items[0] = a; items[1] = b; }
-			@property ref S front() { return items[i]; }
-			@property bool empty() const { return i >= items.length; }
-			void popFront() { i++; }
-		}
-
-		assert(segment.length > 0, "Path segment string must not be empty.");
-
-		char sep = '\0';
-		if (!segment.length) return R(S.fromTrustedString(null));
-		if (isSeparator(segment[$-1])) {
-			sep = segment[$-1];
-			segment = segment[0 .. $-1];
-		}
-
-		// output an absolute marker segment for "C:\" style absolute segments
-		if (segment.length > 0 && segment[$-1] == ':')
-			return R(S.fromTrustedString("", '/'), S.fromTrustedString(segment, sep));
-
-		return R(S.fromTrustedString(segment, sep));
-	}
-
-	deprecated unittest {
-		struct Segment { string name; char separator = 0; static Segment fromTrustedString(string str, char sep = 0) pure nothrow @nogc { return Segment(str, sep); }}
-		assert(decodeSegment!Segment("foo").equal([Segment("foo")]));
-		assert(decodeSegment!Segment("foo/").equal([Segment("foo", '/')]));
-		assert(decodeSegment!Segment("fo%20o\\").equal([Segment("fo%20o", '\\')]));
-		assert(decodeSegment!Segment("C:\\").equal([Segment("",'/'), Segment("C:", '\\')]));
-		assert(decodeSegment!Segment("bar:\\").equal([Segment("",'/'), Segment("bar:", '\\')]));
-	}
-
 	static string decodeSingleSegment(string segment)
 	@nogc {
 		assert(segment.length == 0 || segment[$-1] != '/');
@@ -1602,24 +1550,6 @@ struct PosixPathFormat {
 		assert(validatePath("foo\0bar") !is null);
 	}
 
-	deprecated("Use decodeSingleSegment instead.")
-	static auto decodeSegment(S)(string segment)
-	{
-		assert(segment.length > 0, "Path segment string must not be empty.");
-		import std.range : only;
-		if (!segment.length) return only(S.fromTrustedString(null, '/'));
-		if (segment[$-1] == '/')
-			return only(S.fromTrustedString(segment[0 .. $-1], '/'));
-		return only(S.fromTrustedString(segment));
-	}
-
-	deprecated unittest {
-		struct Segment { string name; char separator = 0; static Segment fromTrustedString(string str, char sep = 0) pure nothrow @nogc { return Segment(str, sep); }}
-		assert(decodeSegment!Segment("foo").equal([Segment("foo")]));
-		assert(decodeSegment!Segment("foo/").equal([Segment("foo", '/')]));
-		assert(decodeSegment!Segment("fo%20o\\").equal([Segment("fo%20o\\")]));
-	}
-
 	static string decodeSingleSegment(string segment)
 	@nogc {
 		assert(segment.length == 0 || segment[$-1] != '/');
@@ -1785,36 +1715,6 @@ struct InetPathFormat {
 		assert(validatePath("/test%") !is null);
 		assert(validatePath("/test§") !is null);
 		assert(validatePath("föö") !is null);
-	}
-
-	deprecated("Use decodeSingleSegment instead.")
-	static auto decodeSegment(S)(string segment)
-	{
-		import std.algorithm.searching : any;
-		import std.array : array;
-		import std.exception : assumeUnique;
-		import std.range : only;
-		import std.utf : byCodeUnit;
-
-		if (!segment.length) return only(S.fromTrustedString(null));
-		char sep = '\0';
-		if (segment[$-1] == '/') {
-			sep = '/';
-			segment = segment[0 .. $-1];
-		}
-
-		if (!segment.byCodeUnit.any!(c => c == '%'))
-			return only(S(segment, sep));
-		string n = decodeSingleSegment(segment).array;
-		return only(S(n, sep));
-	}
-
-	deprecated unittest {
-		struct Segment { string name; char separator = 0; static Segment fromTrustedString(string str, char sep = 0) pure nothrow @nogc { return Segment(str, sep); }}
-		assert(decodeSegment!Segment("foo").equal([Segment("foo")]));
-		assert(decodeSegment!Segment("foo/").equal([Segment("foo", '/')]));
-		assert(decodeSegment!Segment("fo%20o\\").equal([Segment("fo o\\")]));
-		assert(decodeSegment!Segment("foo%20").equal([Segment("foo ")]));
 	}
 
 	static auto decodeSingleSegment(string segment)
