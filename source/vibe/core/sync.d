@@ -1041,9 +1041,6 @@ struct ManualEvent {
 		m_waiters = createMonitor!(ManualEvent.Waiters)(new shared Mutex);
 	}
 
-	deprecated("ManualEvent is always non-null!")
-	bool opCast (T : bool) () const shared nothrow { return true; }
-
 	/// A counter that is increased with every emit() call
 	int emitCount() const shared nothrow @trusted { return atomicLoad(m_emitCount); }
 

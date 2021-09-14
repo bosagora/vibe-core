@@ -148,31 +148,6 @@ TCPListener listenTCP(ushort port, TCPConnectionDelegate connection_callback, st
 	return TCPListener(sock);
 }
 
-/// Compatibility overload - use an `@safe nothrow` callback instead.
-deprecated("Use a @safe nothrow callback instead.")
-TCPListener[] listenTCP(ushort port, void delegate(TCPConnection) connection_callback, TCPListenOptions options = TCPListenOptions.defaults)
-{
-	TCPListener[] ret;
-	try ret ~= listenTCP(port, connection_callback, "::", options);
-	catch (Exception e) logDiagnostic("Failed to listen on \"::\": %s", e.msg);
-	try ret ~= listenTCP(port, connection_callback, "0.0.0.0", options);
-	catch (Exception e) logDiagnostic("Failed to listen on \"0.0.0.0\": %s", e.msg);
-	enforce(ret.length > 0, format("Failed to listen on all interfaces on port %s", port));
-	return ret;
-}
-/// ditto
-deprecated("Use a @safe nothrow callback instead.")
-TCPListener listenTCP(ushort port, void delegate(TCPConnection) connection_callback, string address, TCPListenOptions options = TCPListenOptions.defaults)
-{
-	return listenTCP(port, (conn) @trusted nothrow {
-		try connection_callback(conn);
-		catch (Exception e) {
-			e.logException("Handling of connection failed");
-			conn.close();
-		}
-	}, address, options);
-}
-
 /**
 	Starts listening on the specified port.
 

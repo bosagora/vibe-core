@@ -318,8 +318,6 @@ struct FixedRingBuffer(T, size_t N = 0, bool INITIALIZE = true) {
 	@property size_t capacity() const { return m_buffer.length; }
 
 	static if( N == 0 ){
-		deprecated @property void freeOnDestruct(bool b) { m_freeOnDestruct = b; }
-
 		/// Resets the capacity to zero and explicitly frees the memory for the buffer.
 		void dispose()
 		{
