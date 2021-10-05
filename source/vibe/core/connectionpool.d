@@ -119,7 +119,20 @@ final class ConnectionPool(Connection)
 		foreach (c; removed_conns)
 			disconnect_callback(c);
 	}
+
+	///
+	void remove(Connection conn) @safe
+	{
+		foreach (idx, c; m_connections)
+			if (c is conn)
+			{
+				m_connections = m_connections[0 .. idx] ~ m_connections[idx + 1 .. $];
+				return;
+			}
+		assert(0, "Removing non existing conn");
+	}
 }
+
 
 ///
 unittest {
