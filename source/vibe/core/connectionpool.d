@@ -54,7 +54,7 @@ final class ConnectionPool(Connection)
 		m_sem.maxLocks = max_concurrent;
 	}
 	/// ditto
-	@property uint maxConcurrency() {
+	@property uint maxConcurrency() nothrow {
 		return m_sem.maxLocks;
 	}
 
@@ -130,6 +130,19 @@ final class ConnectionPool(Connection)
 				return;
 			}
 		assert(0, "Removing non existing conn");
+	}
+
+	///
+	bool add(Connection conn) @safe nothrow
+	{
+		assert((conn in m_lockCount) is null);
+		if (m_connections.length < this.maxConcurrency)
+		{
+			m_lockCount[conn] = 0;
+			m_connections ~= conn;
+			return true;
+		}
+		return false;
 	}
 }
 
