@@ -1111,15 +1111,13 @@ Timer createTimer(void delegate() nothrow @safe callback = null)
 				assert(m_running);
 				scope (exit) m_running = false;
 
-				do {
-					m_pendingFire = false;
-					m_callback();
+				m_pendingFire = false;
+				m_callback();
 
-					// make sure that no callbacks are fired after the timer
-					// has been actively stopped
-					if (m_pendingFire && !tm.pending)
-						m_pendingFire = false;
-				} while (m_pendingFire);
+				// make sure that no callbacks are fired after the timer
+				// has been actively stopped
+				if (m_pendingFire && !tm.pending)
+					m_pendingFire = false;
 			}, tm);
 		}
 	}
